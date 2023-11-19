@@ -1,0 +1,153 @@
+\documentclass{article}
+
+\usepackage[a4paper, landscape, margin=5pt]{geometry}
+\usepackage{hyperref}       % links
+\usepackage{multicol}       % for columns layout
+\usepackage{blindtext}      % lorem ipsum
+\usepackage{listings}       % code
+\usepackage{xcolor}          % color
+
+% settings
+\setlength{\parindent}{0pt}     % no first row paragraph indentation
+\setlength{\parskip}{0pt}       % Space between paragraphs
+\setlength{\multicolsep}{0pt}   % no bottom and top space in multicols
+\setlength{\columnsep}{2pt}     % column separation
+\pagestyle{empty}               % no page numbers
+% setting listings to Racket style
+\lstdefinestyle{Haskell}{
+    aboveskip=0pt,
+    belowskip=0pt,
+    commentstyle=\color{orange},
+    basicstyle=\ttfamily\color{darkgray},
+    keywordstyle=\ttfamily\bfseries\color{black},
+    stringstyle=\color{blue},       
+    breaklines=true,                              
+    keepspaces=true,
+    language=Haskell,
+    mathescape=true,
+    alsoletter={!, ?},
+    keywords={data, map, show, module, let, in, zip, where, class, false, instance, take, not, deriving, id}
+}
+\lstset{style=Haskell}
+\newcommand{\dollar}{\mbox{\textdollar}}
+
+\begin{document}
+\textbf{Haskell CheatSheet} - \href{https://github.com/isthissuperuser}{https://github.com/isthissuperuser} \textbar{ }  \textbf{legenda}: \{ \} optional, [ ] one or more, 
+\begin{multicols*}{3}
+
+\hrulefill
+
+\textbf{MISC}
+\begin{lstlisting}
+data name = food | fish | .. -- sum/union
+data name a = name {getterX, getterYa :: a} -- constructor takes 2 arg of same type a and also expose already the getters
+let var1 = value1
+    var2 = value2
+in  body
+$\dollar$ -- evaluate before right expression
+show -- print
+zip lst1 lst2 -- couples from each lst
+module filename (fnames) where -- export functions in module
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{CONTROL FLOW}
+\begin{lstlisting}
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{VECTORS}
+\begin{lstlisting}
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{LISTS}
+\begin{lstlisting}
+[a] -- list of variable type
+[cur:rest]
+take 3 lst -- return first 3 elems 
+lst [1, 3 .. 10] -- [1, 3, 6, 9]
+lst [ x * 2 | x <- [0, 1 ..]] -- even numbers
+++ -- list concat
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{FUNCTIONS}
+\begin{lstlisting}
+fname arg = body
+map (f1 . f2) lst -- first map f2 then f1
+(\ x -> x * 2) -- lambda
+fname arg@(cur:rest) = body -- arg is string decomposed
+fname num
+ | f1 < 2 = "small"
+ | f1 > 2 = "big"
+ where
+    f1 = fbody
+id -- identity function
+4 `div` 2 -- integer division
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{CLASSES}
+\begin{lstlisting}
+class name parameter where
+    functions -- create classes
+class Equal a where
+    (==) :: a -> a -> bool
+    x /= y = not (x == y)
+data Tree a = Leaf a | Branch (Tree a) (Tree a)
+instance (Equal a) => Equal (Tree a) where
+    Leaf a == Leaf b = a == b
+    (Branch a1 b1) == (Branch a2 b2) = a1 == a2 && b1 == b2
+    _ == _ = False
+-- instantiating Equal class with a Tree as arg
+-- and implementing (==) func for it
+data Tree a = Leaf a | Branch (Tree a) (Tree a) deriving (Eq) -- deriving for class inheritance 
+instance Foldable Tree where -- Foldable has no args
+    foldr :: (a -> b -> b) -> b -> Tree a -> b
+    -- foldr func acc Tree returns acc
+-- instance is for pseudo classes inheritance
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{FUNCTORS}
+\begin{lstlisting}
+data Result a = Err | Ok a deriving (Eq, Ord, Show)
+instance Functor Result where
+    fmap f (Ok a) = Ok $\dollar$ f a
+    fmap f Err = Err
+-- fmap can be called also with <$\dollar$>
+-- functors are for applying functions of one argument to a particular object
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{APPLICATIVES}
+\begin{lstlisting}
+instance Applicative Result where
+    (<*>) :: Result (a -> b) -> Result a -> Result b
+    (Ok f) <*> (Ok x) = Ok $\dollar$ f x
+    _ <*> Err = Err
+    Err <*> _ = Err
+
+    pure = Ok
+-- applicative are like Functors but they work with 2 parameters and the first one can also be a partially applied function
+[(+1), (*2), (^3)] <*> [1,2,3]
+[2, 3, 4, 2, 4, 6, 1, 8, 27]
+-- partial f applied to list and concat
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{PATTERNS}
+\begin{lstlisting}
+\end{lstlisting}
+
+\end{multicols*}
+\end{document}
