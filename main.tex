@@ -26,7 +26,7 @@
     language=Haskell,
     mathescape=true,
     alsoletter={!, ?},
-    keywords={data, map, show, module, let, in, zip, where, class, false, instance, take, not, deriving, id}
+    keywords={data, map, show, module, let, in, zip, where, class, false, instance, take, not, deriving, id, Monad, >>=, return, foldr}
 }
 \lstset{style=Haskell}
 \newcommand{\dollar}{\mbox{\textdollar}}
@@ -40,14 +40,13 @@
 \textbf{MISC}
 \begin{lstlisting}
 data name = food | fish | .. -- sum/union
-data name a = name {getterX, getterYa :: a} -- constructor takes 2 arg of same type a and also expose already the getters
+data Name a = Name {getterX, getterY :: a} 
+ -- constructor takes 2 arg of different type a and also expose the getters
 let var1 = value1
     var2 = value2
 in  body
 $\dollar$ -- evaluate before right expression
 show -- print
-zip lst1 lst2 -- couples from each lst
-module filename (fnames) where -- export functions in module
 \end{lstlisting}
 
 \hrulefill
@@ -58,20 +57,16 @@ module filename (fnames) where -- export functions in module
 
 \hrulefill
 
-\textbf{VECTORS}
-\begin{lstlisting}
-\end{lstlisting}
-
-\hrulefill
-
 \textbf{LISTS}
 \begin{lstlisting}
 [a] -- list of variable type
-[cur:rest]
-take 3 lst -- return first 3 elems 
-lst [1, 3 .. 10] -- [1, 3, 6, 9]
-lst [ x * 2 | x <- [0, 1 ..]] -- even numbers
+[1, 3 .. 10] -- [1, 3, 6, 9]
+1:[] -- cons operator
 ++ -- list concat
+take 3 list -- return first 3 elems 
+drop 3 list -- remove first 3 elems
+lst [ x * 2 | x <- [0, 1 ..]] -- even numbers
+zip lst1 lst2 -- couples from each lst
 \end{lstlisting}
 
 \hrulefill
@@ -81,7 +76,7 @@ lst [ x * 2 | x <- [0, 1 ..]] -- even numbers
 fname arg = body
 map (f1 . f2) lst -- first map f2 then f1
 (\ x -> x * 2) -- lambda
-fname arg@(cur:rest) = body -- arg is string decomposed
+fname arg@(cur:rest) = body -- arg is list decomposed
 fname num
  | f1 < 2 = "small"
  | f1 > 2 = "big"
@@ -97,7 +92,7 @@ id -- identity function
 \begin{lstlisting}
 class name parameter where
     functions -- create classes
-class Equal a where
+class Equal a where -- pseudo class
     (==) :: a -> a -> bool
     x /= y = not (x == y)
 data Tree a = Leaf a | Branch (Tree a) (Tree a)
@@ -105,25 +100,38 @@ instance (Equal a) => Equal (Tree a) where
     Leaf a == Leaf b = a == b
     (Branch a1 b1) == (Branch a2 b2) = a1 == a2 && b1 == b2
     _ == _ = False
--- instantiating Equal class with a Tree as arg
--- and implementing (==) func for it
-data Tree a = Leaf a | Branch (Tree a) (Tree a) deriving (Eq) -- deriving for class inheritance 
-instance Foldable Tree where -- Foldable has no args
+-- instantiating Equal pseudo class with a Tree as arg
+data Tree a = Leaf a | Branch (Tree a) (Tree a) deriving (Eq)
+data Result a = Err | Ok a deriving (Eq, Ord, Show)
+data Slist a = Slist [a] Int deriving (Eq, Show)
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{FOLDABLE}
+\begin{lstlisting}
+instance Foldable Tree where
     foldr :: (a -> b -> b) -> b -> Tree a -> b
-    -- foldr func acc Tree returns acc
--- instance is for pseudo classes inheritance
+    foldr f acc (Leaf x) = f acc x
+    foldr f acc (Branch x1 x2) = f (foldr f acc x1) (foldr f acc x2)
+instance Foldable Slist where
+  foldr :: (a -> b -> b) -> b -> Slist a -> b
+  foldr f acc (Slist list len) = foldr f acc list
 \end{lstlisting}
 
 \hrulefill
 
 \textbf{FUNCTORS}
 \begin{lstlisting}
-data Result a = Err | Ok a deriving (Eq, Ord, Show)
 instance Functor Result where
+    fmap:: (a -> b) -> Result a -> Result b
     fmap f (Ok a) = Ok $\dollar$ f a
     fmap f Err = Err
 -- fmap can be called also with <$\dollar$>
 -- functors are for applying functions of one argument to a particular object
+instance Functor Slist where
+  fmap :: (a -> b) -> Slist a -> Slist b
+  fmap f (Slist list len) = Slist (fmap f list) len
 \end{lstlisting}
 
 \hrulefill
@@ -135,12 +143,34 @@ instance Applicative Result where
     (Ok f) <*> (Ok x) = Ok $\dollar$ f x
     _ <*> Err = Err
     Err <*> _ = Err
-
-    pure = Ok
--- applicative are like Functors but they work with 2 parameters and the first one can also be a partially applied function
+    Pure :: a -> Result a
+    pure a = Ok a
+-- applicative apply a partially applied function to the object. If you have lists for both of them, the functions are applied sequentially as functors and then concat of the resulting lists
 [(+1), (*2), (^3)] <*> [1,2,3]
 [2, 3, 4, 2, 4, 6, 1, 8, 27]
 -- partial f applied to list and concat
+instance Applicative Slist where
+  pure :: a -> Slist a
+  pure a = Slist [a] 1
+  (<*>) :: Slist (a -> b) -> Slist a -> Slist b
+  (Slist flist _) <*>  (Slist a alen) = Slist (flist <*> a) alen
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{MONADS}
+\begin{lstlisting}
+instance Monad Result where
+    Ok x >>= f = f x
+    Err >>= _ = Err
+instance Monad Slist where
+  (>>=) :: Slist a -> (a -> Slist b) -> Slist b
+  (Slist list len) >>= f = let finalL = (list >>= (\x -> let Slist xs _ = f x in xs)) in Slist finalL $\dollar$ length finalL
+--MONAD RULES
+--LEFT IDENTITY: return x >>= f == f x
+--RIGHT IDENTITY: m >>= return == m
+--ASSOCIATIVITY: (m >>= f) >>= g == m >>= (\x -> f x >>= g)
+-- I can use the do/return contruction with them
 \end{lstlisting}
 
 \hrulefill
