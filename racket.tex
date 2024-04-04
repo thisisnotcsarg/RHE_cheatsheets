@@ -1,0 +1,201 @@
+\documentclass{article}
+
+\usepackage[a4paper, landscape, margin=5pt]{geometry}
+\usepackage{hyperref}       % links
+\usepackage{multicol}       % for columns layout
+\usepackage{blindtext}      % lorem ipsum
+\usepackage{listings}       % code
+\usepackage{xcolor}          % color
+
+% settings
+\setlength{\parindent}{0pt}     % no first row paragraph indentation
+\setlength{\parskip}{0pt}       % Space between paragraphs
+\setlength{\multicolsep}{0pt}   % no bottom and top space in multicols
+\setlength{\columnsep}{2pt}     % column separation
+\pagestyle{empty}               % no page numbers
+% setting listings to Racket style
+\lstdefinestyle{Racket}{
+    aboveskip=0pt,
+    belowskip=0pt,
+    commentstyle=\color{orange},
+    basicstyle=\ttfamily\color{darkgray},
+    keywordstyle=\ttfamily\bfseries\color{black},
+    stringstyle=\color{blue},       
+    breaklines=true,                              
+    keepspaces=true,
+    language=Lisp,
+    mathescape=true,
+    alsoletter={!, ?},
+    keywords={define, let, set!, vector, vector-set!, apply, null?, list?, equal?, define-syntax, syntax-rules, map, string?, zero?, foldr, foldl, split-at, take, drop, let-values, struct, if, where, cond, s?, set-s-var!, begin, for-each, pair?, unless}
+}
+\lstset{style=Racket} 
+
+\begin{document}
+\textbf{Racket CheatSheet} - \href{https://github.com/isthissuperuser}{https://github.com/isthissuperuser} \textbar{ }  \textbf{legenda}: \{ \} optional, [ ] one or more, 
+\begin{multicols*}{3}
+
+\hrulefill
+
+\textbf{MISC}
+\begin{lstlisting}
+(define var val)
+(let {name-let} ([var val]) 
+    (body)
+    ...
+    {name-let (var val)})
+(set! name value)
+(begin
+  body
+  ...)
+(apply f lst)
+(null? lst) ; is empty list
+(pair? lst) ; (not (null? lst))
+(list? lst) ; is list
+(equal? var val)
+(not cond) ; negation
+(string? var)
+(zero? n) ; n == 0
+(unless cond)
+    body ; false
+(error "error") ; display error
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{CONTROL FLOW}
+\begin{lstlisting}
+(if c
+  true
+  false)
+(cond 
+  [(c1) (body)])
+(when (c) ; as if but just true
+  (begin
+    ...))
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{VECTORS}
+\begin{lstlisting}
+#(1 2 3) ; immutable
+(vector 1 2 3) ; mutable
+(vector-set! v 1 0) ; v[1] = 0
+(make-vector length {default_v}) ; mutable
+(build-vector length f(index))
+(vector-length v) ; returns size
+(vector-ref v i) ; return v[i]
+(for ([i v]) (body)) ; cycle
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{LISTS}
+\begin{lstlisting}
+(list) ; create empty list 
+(define lst (list a b))
+(define lst '(a b))
+(car lst) ; take head
+(cdr lst) ; take rest
+(a . '()) ; concat elems
+(map (f) lst)
+; starts from the beginnig
+; space complexity: O(1)
+; tail-recursive
+(foldl f first_elem lst)
+; starts from the end
+; space complexity: O(n)
+; no tail-recursive
+(foldr f first_elem lst)
+(let-values ([(var1 var2) (split-at lst idx)])
+  (body)); split at idx into var1, var2
+(take lst n) ; ret first n elem
+(drop lst n) ; ret elems after n
+(for-each f(elem) lst)
+(for ([i (in-list l)])
+    (body))
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{FUNCTIONS}
+\begin{lstlisting}
+(define f $\lambda$((arg . args)(body)))
+(define (f arg . args)
+  (body))
+(define (f n acc);tail recursive
+  (if (base_case)
+    acc
+    (f (step n) (iteration acc n))))
+(define (f) ; closure
+  (let ((var val))
+    ($\lambda$ () ; state preserved
+      (inc1 var)))) 
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{STRUCTS}
+\begin{lstlisting}
+(struct s
+  (var1 ; immutable field
+  [var2 #:mutable]))
+(s? var) ; is name
+(set-s-var! s val)
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{MACROS}
+\begin{lstlisting}
+(define-syntax name
+  (syntax-rules () ; decorative
+    [(syntax) ; first case
+     (body)] ; 1 stmt here
+    [(_ ...) ()] ; catch all
+))
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{CONTINUATIONS}
+\begin{lstlisting}
+; calling k substitutes call/cc block with arg and jumps
+(let ([cc 
+  (call/cc (lambda (k)
+    (k k)))])
+  (cc cc)) ; same as calling k
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{PATTERNS}
+\begin{lstlisting}
+; call/cc list push/pop
+; choice puts in stack checkpoint that call choice again but with all the other choices and returns a choice. Function fail fails if no other choices are present otherwise it pops and call from the stack
+(define (unknown-method ls)
+  (error "Unknown method" (car ls)))
+(define-syntax define-dispatcher
+  (syntax-rules (methods: parent:)
+    ((_ methods: (mt ...) parent: p)
+     (lambda (message . args)
+       (case message
+         ((mt) (apply mt args))
+         ...
+         (else (apply p (cons message args))))))
+    ((_ methods: mts)
+     (define-dispatcher methods: mts parent: unknown-method))))
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{TIPS}
+\begin{lstlisting}
+; Quando crei sintassi la prima parola che da inizo a tutto. Le altre parole sono decorative. Puoi usare _ al posto della parola master della sintassi. Le parentesi se ti servono devi metterle. I ... inheritano automaticamente le ripetizioni di certe parti
+; dentro le parentesi gia si esegue a meno che non siano array!
+; una lamda dentro a una funzione e una closure e la funzione preserva lo stato
+; ... devono essere usati per stmt vicini
+\end{lstlisting}
+
+\end{multicols*}
+\end{document}

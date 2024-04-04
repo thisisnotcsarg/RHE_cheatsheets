@@ -1,0 +1,169 @@
+\documentclass{article}
+
+\usepackage[a4paper, landscape, margin=5pt]{geometry}
+\usepackage{hyperref}       % links
+\usepackage{multicol}       % for columns layout
+\usepackage{blindtext}      % lorem ipsum
+\usepackage{listings}       % code
+\usepackage{xcolor}          % color
+
+% settings
+\setlength{\parindent}{0pt}     % no first row paragraph indentation
+\setlength{\parskip}{0pt}       % Space between paragraphs
+\setlength{\multicolsep}{0pt}   % no bottom and top space in multicols
+\setlength{\columnsep}{2pt}     % column separation
+\pagestyle{empty}               % no page numbers
+% setting listings to Erlang style
+\lstdefinestyle{Erlang}{
+    aboveskip=0pt,
+    belowskip=0pt,
+    commentstyle=\color{orange},
+    basicstyle=\ttfamily\color{darkgray},
+    keywordstyle=\ttfamily\bfseries\color{black},
+    stringstyle=\color{blue},       
+    breaklines=true,                              
+    keepspaces=true,
+    language=Erlang,
+    mathescape=true,
+    alsoletter={!, ?},
+    keywords={}
+}
+\lstset{style=Erlang} 
+
+\begin{document}
+\textbf{Erlang CheatSheet} - \href{https://github.com/isthissuperuser}{https://github.com/isthissuperuser} \textbar{ }  \textbf{legenda}: \{ \} optional, [ ] one or more, 
+\begin{multicols*}{3}
+
+\hrulefill
+
+\textbf{MISC}
+\begin{lstlisting}
+io:fwrite("Hello ~s~n", [Name])
+% 1 == 1.0  % => True
+% 1 =:= 1.0 % => False
+RPS = [rock, paper, scissor] % atoms
+% every -> ends with a ;
+% if it is last arrow ends with a .
+% statements inside same -> ends with,
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{CONTROL FLOW}
+\begin{lstlisting}
+start() ->
+stop() ->
+if
+    ture_cond ->
+        code;
+    false_cond ->
+        code
+end,
+case expr of
+    val1 -> code;
+    val2 -> code
+end,
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{LISTS}
+\begin{lstlisting}
+emptyl = [].
+['1'] % list containing the char 1
+[x | xs] % cur and rest of list
+[] ++ [] % list concat 
+lists:member(soccer, Sports) % true if soccer atom is inside Sports list
+lists:nth(rand:uniform(2), RPS) % extract the ith element from RPS, in this case a random index
+lists:foreach(fun, list)
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{MAPS}
+\begin{lstlisting}
+Map = #{key => 0}. % initialization
+maps:is_key(Key, Map) % check key
+maps:get(Key, Map) % Return Val
+maps:put(Key, Value, Map) % update
+maps:find(Key, Map) % returns {ok, Value} | error
+maps:values(Map) % List values 
+maps:keys(Map) % list of keys
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{FUNCTIONS}
+\begin{lstlisting}
+greet(Name) when is_list(Name) ->
+    "Hello " ++ Name ++ "!";
+greet(_) ->
+    "Invalid name".
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{PARALLELISM}
+\begin{lstlisting}
+Pid = spawn_link(fun() -> rps_loop() end) % spawn a process
+spawn(?MODULE, btrees_body, [{leaf, N}, Pid]) % spawned with defined function and given args
+Pid ! {self(), rock} % send message to process
+receive
+    {PlayerPid, PlayerChoice} ->
+        PlayerPid ! rps_win(PlayerChoice, CPUChoice)
+    after 3000 ->
+        exit(ok)
+end.
+Self = self() % take your pid
+register(Name, Pid)
+unregister(Name)
+\end{lstlisting}
+
+\hrulefill
+
+\textbf{EXAMPLES}
+\begin{lstlisting}
+deeprev([X | Xs]) -> deeprev(Xs) ++ [deeprev(X)];
+deeprev(X) -> X.
+deeprevp(L) ->
+    Me = self(),
+    drp(Me, L),
+    receive
+        {Me, R} -> R
+    end.
+drp(F, [P|N]) ->
+    Me = self(),
+    C1 = spawn(fun() -> drp(Me, P) end),
+    C2 = spawn(fun() -> drp(Me, N) end),
+    receive
+        {C1, RP} ->
+            receive
+                {C2, RN} -> F ! {Me, RN ++ [RP]}
+            end
+    end;
+drp(F, L) ->
+    F ! {self(), L}.
+% For NDPDA, register the states, Every state is a subprocess, THey receive messages and send messages to other states, Message is composed by: The whole string, the current character of the string and next characters and the current symbol in the stack and the next symbols, based on that it updates the states that is stored on the messages and routes to different states
+\end{lstlisting}
+\hrulefill
+\begin{lstlisting}
+inctree({leaf, X}) ->
+    {leaf, X+1};
+inctree({branch, X, Y}) ->
+    {branch, inctree(X), inctree(Y)}.
+incbtrees(F, T) ->
+    receive
+        next ->
+            T1 = inctree(T),
+            T2 = {branch, T1, T1},
+            F ! T2,
+            incbtrees(F, T2);
+        stop -> T
+    end.
+\end{lstlisting}
+\hrulefill
+\begin{lstlisting}
+
+\end{lstlisting}
+\end{multicols*}
+\end{document}
